@@ -27,7 +27,9 @@ func NewOneEntryRelFs(path string, data []byte) *OneEntryRelFs {
 func (o *OneEntryRelFs) Open(name string) (io.ReadCloser, error) {
 	if name != o.path {
 		return nil, &os.PathError{
-			Op: "open",
+			Op:   "open",
+			Path: name,
+			Err:  os.ErrNotExist,
 		}
 	}
 	return io.NopCloser(bytes.NewReader(o.data)), nil
@@ -36,7 +38,9 @@ func (o *OneEntryRelFs) Open(name string) (io.ReadCloser, error) {
 func (o *OneEntryRelFs) OpenReader(name string) (OpenReader, error) {
 	if name != o.path {
 		return nil, &os.PathError{
-			Op: "open",
+			Op:   "open",
+			Path: name,
+			Err:  os.ErrNotExist,
 		}
 	}
 	return NewByteOpener(o.data), nil
@@ -46,7 +50,9 @@ func (o *OneEntryRelFs) Get(name string) (*RelResource, error) {
 	loc := filepath.Clean(name)
 	if loc != o.path {
 		return nil, &os.PathError{
-			Op: "get",
+			Op:   "get",
+			Path: name,
+			Err:  os.ErrNotExist,
 		}
 	}
 	return &RelResource{
@@ -58,7 +64,9 @@ func (o *OneEntryRelFs) Get(name string) (*RelResource, error) {
 func (o *OneEntryRelFs) RelativePath(parent string, child string) (string, error) {
 	if parent != o.path {
 		return "", &os.PathError{
-			Op: "relpath",
+			Op:   "relpath",
+			Path: parent,
+			Err:  os.ErrNotExist,
 		}
 	}
 	loc := filepath.Clean(filepath.Join(parent, child))
