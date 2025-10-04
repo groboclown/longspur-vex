@@ -23,6 +23,31 @@ This tool aims to:
 * As a consequence of the above items, construct a single SBOM and VEX document for your project.  At the moment, we consider pushing these documents to another location out of scope.
 
 
+## CVE + VEX to SBOM Mapping
+
+An SBOM, when properly constructed, describes a *dependency tree* of a product.  For example, let's look at the [Dependency Track](https://github.com/DependencyTrack/dependency-track) server.  It's written in Java, and publishes its SBOM file.   So let's look at [version 4.13.4](https://github.com/DependencyTrack/dependency-track/releases/download/4.13.4/bom.json), which contains:
+
+* Primary component `pkg:maven/org.dependencytrack/dependency-track@4.13.4?type=war`
+  * which depends on:
+    * Component `pkg:maven/org.apache.httpcomponents/httpclient@4.5.14?type=jar`
+    * Component `pkg:maven/com.google.cloud.sql/postgres-socket-factory@1.24.1?type=jar`
+      * which depends on:
+        * Component `pkg:maven/com.google.cloud.sql/jdbc-socket-factory-core@1.24.1?type=jar`
+          * which depends on:
+            * Component `pkg:maven/com.google.http-client/google-http-client@1.46.3?type=jar`
+              * which depends on:
+                * Component `pkg:maven/org.apache.httpcomponents/httpclient@4.5.14?type=jar`
+
+If someone reports a CVE on `httpclient` version 4.5.14, then that means:
+
+* `google-http-client` should report how the CVE affects it, through a VEX document.  If we assume that analysts on the `google-http-client` project determine that the CVE does not affect it, then that means all the parents up the chain of the SBOM for `google-http-client` (i.e. `jdbc-socket-factory-core`, `postgres-socket-factory`, and `dependency-track`), can safely also reuse that analysis for their project, but *only insomuch as it uses the library though `google-http-client`*.
+* In the case of `dependency-track`, which uses the `httpclient` library through the `google-http-client` *and* directly, the maintainers of the `dependency-track` project must perform their own analysis of their direct use of the `httpclient` library.
+* On the other hand, if `google-http-client` reports through its VEX that it suffers from the vulnerability, but only through a very limited window, then the parents of `google-http-client` must provide a VEX document on their use of `google-http-client` for this CVE.
+* Worse still, one of those projects may not publish its own VEX document, which places the burden of performing the analysis upon the parent projects.
+
+To this end, the Longspur project aims to give projects the tools to manage this new form of dependency hell.
+
+
 # Friction
 
 While there exist many tools that do parts of this, none seem to do it as a unified whole.  Additionally, existing tools have their own share of issues that come into conflict with the goals of this tool:
@@ -41,4 +66,6 @@ Currently in the planning and experimental / Proof of Concept phase.  See [TODO.
 
 # License
 
-[Apache 2.0](LICENSE)
+The [Apache 2.0](LICENSE) license covers the software in this project.  Contributors must assign copyright to the project and submit their changes under the same license.
+
+The sample data files used for compatibility testing have their own licenses, as described by the README file in the same directory.
