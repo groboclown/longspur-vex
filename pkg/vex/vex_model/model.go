@@ -22,7 +22,8 @@ type VexStatement struct {
 	// uses the CVE affected dependency has an attestation.
 	// In the case of reporting through a transient dependency, this owner points to the
 	// project that performed the analysis in the statement, so that proper lineage of
-	// affected products can be determined.
+	// affected products can be determined.  Note that the statement's list of products
+	// *should* reference the product which contains the dependency which has the CVE.
 	Owner packageurl.PackageURL
 
 	// The structure which populated this package information.

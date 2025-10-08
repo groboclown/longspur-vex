@@ -29,7 +29,7 @@ type ReadableSbom struct {
 	// TODO add discovered format?
 }
 
-// SbomPackage represents a software package or component in an SBOM.
+// SbomPackageInfo represents a software package or component in an SBOM.
 type SbomPackageInfo struct {
 	// Human-readable name representation of the package.
 	Name string

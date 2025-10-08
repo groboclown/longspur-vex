@@ -6,6 +6,42 @@ import (
 	"strings"
 )
 
+func (i Identifier) String() string {
+	return fmt.Sprintf("%s:%s", i.Type, i.Value)
+}
+
+// NormalizeIdentifiers trims whitespace and removes duplicates, then sorts.
+// It lower-cases and trims the type, but preserves the case of the value.
+func NormalizeIdentifiers(ids []Identifier) []Identifier {
+	found := make(map[string]any)
+	ret := make([]Identifier, 0, len(ids))
+	for _, id := range ids {
+		n_type := strings.TrimSpace(string(id.Type))
+		if n_type == "" {
+			continue
+		}
+		n_type = strings.ToLower(n_type)
+		val := strings.TrimSpace(id.Value)
+		id := fmt.Sprintf("%s:%s", n_type, val)
+		if _, exists := found[id]; !exists {
+			found[id] = nil
+			ret = append(ret, Identifier{
+				Type:  IdentifierType(n_type),
+				Value: val,
+			})
+		}
+	}
+	sort.Slice(ret, func(i, j int) bool {
+		if ret[i].Type == ret[j].Type {
+			return ret[i].Value < ret[j].Value
+		}
+		return ret[i].Type < ret[j].Type
+	})
+	return ret
+}
+
+// MatchableId is a wrapper around a list of identifiers that provides
+// convenient methods for matching and comparing identifiers.
 type MatchableId struct {
 	id     []*Identifier
 	mapped map[IdentifierType]*Identifier

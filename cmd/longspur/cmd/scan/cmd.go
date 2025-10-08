@@ -18,11 +18,13 @@ func ScanBuilder(ctx *config.CliContext) *cli.Command {
 				Usage: "Path to the scan configuration file.",
 			},
 		},
-		Action: scanAction,
+		Action: func(c context.Context, cmd *cli.Command) error {
+			return scanAction(c, ctx, cmd)
+		},
 	}
 }
 
-func scanAction(context.Context, *cli.Command) error {
+func scanAction(ctx context.Context, conf *config.CliContext, cmd *cli.Command) error {
 	// TODO needs to construct the ScanSettings.
 	return nil
 }

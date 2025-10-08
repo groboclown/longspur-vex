@@ -11,7 +11,7 @@ import (
 
 func ConvertCdx(input *longspurio.RelResource, cdxBom *cyclonedx.BOM) (*sbommodel.ReadableSbom, error) {
 	errs := []error{}
-	tree, err_list := parseCdxToDependencies(cdxBom)
+	tree, err_list := parseCdxToDependencies(input.Path(), cdxBom)
 	if err_list != nil {
 		errs = append(errs, err_list...)
 	}
@@ -22,13 +22,10 @@ func ConvertCdx(input *longspurio.RelResource, cdxBom *cyclonedx.BOM) (*sbommode
 	if sbom == nil || len(errs) > 0 {
 		return nil, sbommodel.NewSbomParseError(input.Path(), errs)
 	}
-	for _, pkg := range sbom.Packages {
-		pkg.SourcePath = input.Path()
-	}
 	return sbom, nil
 }
 
-func parseCdxToDependencies(cdxBom *cyclonedx.BOM) ([]*sbommodel.SbomPackageDependencies, []error) {
+func parseCdxToDependencies(path string, cdxBom *cyclonedx.BOM) ([]*sbommodel.SbomPackageDependencies, []error) {
 	if cdxBom == nil || cdxBom.Components == nil {
 		return nil, nil
 	}
@@ -36,7 +33,7 @@ func parseCdxToDependencies(cdxBom *cyclonedx.BOM) ([]*sbommodel.SbomPackageDepe
 	tree := make([]*sbommodel.SbomPackageDependencies, 0, len(*cdxBom.Components))
 
 	for _, c := range *cdxBom.Components {
-		pkg, err := convertCdxComponentToInfo(&c)
+		pkg, err := convertCdxComponentToInfo(path, &c)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -49,7 +46,7 @@ func parseCdxToDependencies(cdxBom *cyclonedx.BOM) ([]*sbommodel.SbomPackageDepe
 	return tree, errs
 }
 
-func convertCdxComponentToInfo(c *cyclonedx.Component) (*sbommodel.SbomPackageInfo, error) {
+func convertCdxComponentToInfo(path string, c *cyclonedx.Component) (*sbommodel.SbomPackageInfo, error) {
 	if c == nil || c.PackageURL == "" {
 		// This only captures packages that have a purl.  Others tend to be things
 		// like a file or an OS.
@@ -115,7 +112,7 @@ func convertCdxComponentToInfo(c *cyclonedx.Component) (*sbommodel.SbomPackageIn
 		locs = append(locs, c.PackageURL)
 	}
 
-	return &sbommodel.SbomPackageInfo{
+	return sbommodel.NewSbomPackageInfo(&sbommodel.RawPackage{
 		Name:        name,
 		Version:     &c.Version,
 		Purl:        purl,
@@ -123,8 +120,7 @@ func convertCdxComponentToInfo(c *cyclonedx.Component) (*sbommodel.SbomPackageIn
 		Licenses:    lics,
 		Copyright:   cw,
 		Locations:   locs,
-		Source:      c,
-	}, nil
+	}, c, path)
 }
 
 // Look up the dependencies for the given package from the base BOM, and fill them in.

@@ -9,3 +9,17 @@ func ExtractPurlsFromPackages(pkgs []*SbomPackage) []packageurl.PackageURL {
 	}
 	return purls
 }
+
+func ClonePurl(p packageurl.PackageURL) packageurl.PackageURL {
+	q := make(packageurl.Qualifiers, len(p.Qualifiers))
+	copy(q, p.Qualifiers)
+
+	return packageurl.PackageURL{
+		Type:       p.Type,
+		Namespace:  p.Namespace,
+		Name:       p.Name,
+		Version:    p.Version,
+		Qualifiers: q,
+		Subpath:    p.Subpath,
+	}
+}

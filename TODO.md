@@ -52,10 +52,12 @@ The importing of data, at this point, just needs the data; it does not need the 
     - [x] [OSV](pkg/scan/osv/scanner.go)
     - [ ] CVE
 - [ ] Load VEX
+    - [ ] [OpenVex discovery](https://github.com/openvex/discovery)
     - [ ] Local file system (CVE oriented)
     - [ ] Local file system (package oriented)
     - [ ] [Ubuntu security notices](https://github.com/canonical/ubuntu-security-notices).  This site stores the VEX documents as CVE oriented.
     - [ ] Construct a logical, "easy" to maintain, collection of project attestations.  While it can happen in one file, this can grow to an unmaintainable size, especially for projects dealing with attestations for multiple versions.  There exist many possibilities for how to do this, including a separate branch or project to house them.  This project should aim to make a strong recommendation.
+        - Initial ideas placed into [vex-storage](docs/vex-storage.md).
     - This is a still developing story.  Part of this project will help map the evolving landscape.
 - [ ] Unify multiple SBOMs into a single object.
     - Requires conflict resolution, which can come from control patterns or explicit action.  This is being handled through declaration of SBOM sources as either `declarative` or `discovery`.  `discovery` SBOM files perform best-guess analysis of a collection of files, while `declarative` uses something similar to a "package lock" file to extract exact dependency trees.  The `discovery` can help identify items available missed by the package lock, but must take a back seat to the declarative SBOM.

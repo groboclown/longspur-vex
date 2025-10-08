@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"io"
 	"strings"
 
 	"github.com/anchore/packageurl-go"
+	"github.com/groboclown/cve-longspur/internal/http"
 	sbommodel "github.com/groboclown/cve-longspur/pkg/sbom/sbom_model"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const OSV_URL = "https://api.osv.dev/v1/query"
 
+// QueryOsv queries the OSV service for vulnerabilities for the given package.
 func queryOsv(queryUrl string, pkg *sbommodel.SbomPackageInfo) (*cachedResponse, error) {
 	eco := mapEcosystem(*pkg)
 	if eco == "" {
@@ -35,18 +37,23 @@ func queryOsv(queryUrl string, pkg *sbommodel.SbomPackageInfo) (*cachedResponse,
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post(queryUrl, "application/json", bytes.NewReader(jsonData))
+	res, err := http.PostRetry(
+		http.NewJsonRequest(queryUrl, "OSV API"),
+		bytes.NewReader(jsonData),
+		nil,
+		func(r io.Reader) (*VulnResponse, error) {
+			var vulnResp VulnResponse
+			if err := json.NewDecoder(r).Decode(&vulnResp); err != nil {
+				return nil, err
+			}
+			return &vulnResp, nil
+		})
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var vulnResp VulnResponse
-	if err := json.NewDecoder(resp.Body).Decode(&vulnResp); err != nil {
 		return nil, err
 	}
 	return &cachedResponse{
 		Package:         pkg,
-		Vulnerabilities: vulnResp.Vulnerabilities,
+		Vulnerabilities: res.Vulnerabilities,
 	}, nil
 }
 

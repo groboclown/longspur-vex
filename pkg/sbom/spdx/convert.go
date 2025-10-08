@@ -16,7 +16,7 @@ func ConvertSpdx(input *longspurio.RelResource, spdxDoc *spdx.Document) (*sbommo
 	// extra requirements from the user to grant permissions to download.
 
 	errs := []error{}
-	tree, err_list := parseSpdxToDependencies(spdxDoc)
+	tree, err_list := parseSpdxToDependencies(input.Path(), spdxDoc)
 	if len(err_list) > 0 {
 		errs = append(errs, err_list...)
 	}
@@ -27,13 +27,10 @@ func ConvertSpdx(input *longspurio.RelResource, spdxDoc *spdx.Document) (*sbommo
 	if sbom == nil || len(errs) > 0 {
 		return nil, sbommodel.NewSbomParseError(input.Path(), errs)
 	}
-	for _, pkg := range sbom.Packages {
-		pkg.SourcePath = input.Path()
-	}
 	return sbom, nil
 }
 
-func parseSpdxToDependencies(spdxDoc *spdx.Document) ([]*sbommodel.SbomPackageDependencies, []error) {
+func parseSpdxToDependencies(path string, spdxDoc *spdx.Document) ([]*sbommodel.SbomPackageDependencies, []error) {
 	if spdxDoc == nil {
 		return nil, nil
 	}
@@ -42,7 +39,7 @@ func parseSpdxToDependencies(spdxDoc *spdx.Document) ([]*sbommodel.SbomPackageDe
 
 	// First, convert all packages.
 	for _, p := range spdxDoc.Packages {
-		pkg, err := convertSpdxPackageToInfo(p)
+		pkg, err := convertSpdxPackageToInfo(path, p)
 		if err != nil {
 			errs = append(errs, err)
 		} else if pkg != nil {
@@ -62,7 +59,7 @@ func parseSpdxToDependencies(spdxDoc *spdx.Document) ([]*sbommodel.SbomPackageDe
 	return tree, errs
 }
 
-func convertSpdxPackageToInfo(p *spdx.Package) (*sbommodel.SbomPackageInfo, error) {
+func convertSpdxPackageToInfo(path string, p *spdx.Package) (*sbommodel.SbomPackageInfo, error) {
 	if p == nil {
 		return nil, nil
 	}
@@ -96,7 +93,7 @@ func convertSpdxPackageToInfo(p *spdx.Package) (*sbommodel.SbomPackageInfo, erro
 		return nil, nil
 	}
 
-	return &sbommodel.SbomPackageInfo{
+	return sbommodel.NewSbomPackageInfo(&sbommodel.RawPackage{
 		Name:        p.PackageName,
 		Version:     &p.PackageVersion,
 		Purl:        *parsedPurl,
@@ -104,8 +101,7 @@ func convertSpdxPackageToInfo(p *spdx.Package) (*sbommodel.SbomPackageInfo, erro
 		Licenses:    spdxExtractLicenses(p),
 		Copyright:   spdxExtractCopyrights(p),
 		Locations:   spdxExtractLocations(p),
-		Source:      p,
-	}, nil
+	}, p, path)
 }
 
 func spdxExtractLicenses(pkg *spdx.Package) []string {
